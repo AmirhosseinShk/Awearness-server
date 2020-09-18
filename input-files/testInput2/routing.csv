@@ -1,0 +1,2 @@
+host;destination;mask;gateway;interface
+router;0.0.0.0;0.0.0.0;192.168.1.111;eth0

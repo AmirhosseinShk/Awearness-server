@@ -1,0 +1,4 @@
+Hostname;Interface Name;IP address;Connected to WAN;metric
+linux-user-1;eth0;192.168.1.111;false;7
+linux-user-2;eth0;192.168.1.112;false;30
+router;eth0;192.168.1.1;false;0.1
