@@ -110,9 +110,32 @@ public class RestJsonAPI {
     @Produces(MediaType.APPLICATION_JSON)
     public Response initializeFromXMLText(@Context HttpServletRequest request, String xmlString) throws Exception {
         String nussusScanFilePath = ProjectProperties.getInstance().getProperty("nessus-scan-path");
-        Logger.getLogger(RestJsonAPI.class.getName()).log(Level.INFO, "Storing topology in " + nussusScanFilePath);
+        Logger.getLogger(RestJsonAPI.class.getName()).log(Level.INFO, "Storing nessusFile in " + nussusScanFilePath);
         PrintWriter out = new PrintWriter(nussusScanFilePath);
         out.print(xmlString);
+        out.close();
+        return RestApplication.returnJsonObject(request, new JSONObject().put("status", "Loaded"));
+    }
+    
+        /**
+     * Generates the attack graph and initializes the main objects for other API
+     * calls (database, attack graph, attack paths,...). Load the objects from
+     * the POST XML file describing the whole network topology
+     *
+     * @param request the HTTP request
+     * @return the HTTP response
+     * @throws Exception
+     */
+    @POST
+    @Path("/initializeData")
+    @Consumes({MediaType.TEXT_PLAIN, MediaType.APPLICATION_JSON, MediaType.TEXT_XML})
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response initializeAllFromXMLText(@Context HttpServletRequest request, String Data) throws Exception {
+        String fileType = "nessus-scan-path"; // should get it from server side
+        String dataFilePath = ProjectProperties.getInstance().getProperty(fileType);
+        Logger.getLogger(RestJsonAPI.class.getName()).log(Level.INFO, "Storing Data in " + dataFilePath);
+        PrintWriter out = new PrintWriter(dataFilePath);
+        out.print(Data);
         out.close();
         return RestApplication.returnJsonObject(request, new JSONObject().put("status", "Loaded"));
     }

@@ -77,7 +77,8 @@ public class MulVALConnection {
                 while ((line = reader.readLine()) != null) {
                     output.append(line + "\n");
                 }
-
+                
+                System.out.println(line);
                 int exitVal = process.waitFor();
                 if (exitVal == 0) {
                     System.out.println("Success!");
@@ -142,7 +143,8 @@ public class MulVALConnection {
                     "--routing-file", routing,
                     "--mulval-output-file", mulvalInputFile.getAbsolutePath(),
                     "--attackerlocation" , attackerLocation ,
-                    "--to-fiware-xml-topology", topologyFile
+                    "--to-fiware-xml-topology", topologyFile ,
+                    "-vv"
             );
             processBuilder.directory(new File(mulvalInputScriptFolder));
             StringBuilder command = new StringBuilder();
