@@ -12,7 +12,6 @@ import java.io.InputStreamReader;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-
 public class MulVALConnection {
 
     /**
@@ -27,12 +26,11 @@ public class MulVALConnection {
             result.loadFromXMLFile(XMLInformationSystemFile, db);
             return result;
         } catch (Exception e) {
-           Logger.getLogger(MulVALConnection.class.getName()).log(Level.SEVERE, null, e);
+            Logger.getLogger(MulVALConnection.class.getName()).log(Level.SEVERE, null, e);
         }
         return null;
     }
-    
-    
+
     /**
      * call MulVAL attack Graph Generation file
      *
@@ -59,7 +57,7 @@ public class MulVALConnection {
                 processBuilder.command().add("-r");
                 processBuilder.command().add(ProjectProperties.getInstance().getProperty("MulVAL-rules"));
             }
-            
+
             processBuilder.command().add("-o");
             processBuilder.command().add(outputFolderPath + "/AttackGraph");
 
@@ -77,7 +75,7 @@ public class MulVALConnection {
                 while ((line = reader.readLine()) != null) {
                     output.append(line + "\n");
                 }
-                
+
                 System.out.println(line);
                 int exitVal = process.waitFor();
                 if (exitVal == 0) {
@@ -109,7 +107,7 @@ public class MulVALConnection {
      *
      * @return boolean true if the execution was right
      */
-    public static boolean prepareMulVALInputs() {
+    public static boolean prepareMulVALInputs(boolean isTest) {
         try {
             //Load python path
             String pythonPath = ProjectProperties.getInstance().getProperty("python");
@@ -117,16 +115,27 @@ public class MulVALConnection {
             String mulvalInputScriptFolder = ProjectProperties.getInstance().getProperty("server-helper");
             String mulvalInputScriptPath = mulvalInputScriptFolder + "main.py";
 
+            String hosts, vlans, routing, networkFirewall, nessusReport, attackerLocation;
+
             //load inputs file that get from user
-            String hosts = ProjectProperties.getInstance().getProperty("hosts");
-            String vlans = ProjectProperties.getInstance().getProperty("vlans");
-            String routing = ProjectProperties.getInstance().getProperty("routing");
-            String networkFirewall = ProjectProperties.getInstance().getProperty("network-firewall");
-            String nessusReport = ProjectProperties.getInstance().getProperty("nessus-report");
+            if (isTest) {
+                String test = "-test";
+                hosts = ProjectProperties.getInstance().getProperty("hosts" + test);
+                vlans = ProjectProperties.getInstance().getProperty("vlans" + test);
+                routing = ProjectProperties.getInstance().getProperty("routing" + test);
+                networkFirewall = ProjectProperties.getInstance().getProperty("network-firewall" + test);
+                nessusReport = ProjectProperties.getInstance().getProperty("nessus-report" + test);
+                attackerLocation = ProjectProperties.getInstance().getProperty("attacker-location" + test);
+            } else {
+                hosts = ProjectProperties.getInstance().getProperty("hosts");
+                vlans = ProjectProperties.getInstance().getProperty("vlans");
+                routing = ProjectProperties.getInstance().getProperty("routing");
+                networkFirewall = ProjectProperties.getInstance().getProperty("network-firewall");
+                nessusReport = ProjectProperties.getInstance().getProperty("nessus-report");
+                attackerLocation = ProjectProperties.getInstance().getProperty("attacker-location");
+            }
             String MulVALInput = ProjectProperties.getInstance().getProperty("MulVAL-input");
             String topologyFile = ProjectProperties.getInstance().getProperty("output-topology");
-            String attackerLocation = ProjectProperties.getInstance().getProperty("attacker-location");
-            
 
             File mulvalInputFile = new File(MulVALInput);
             if (mulvalInputFile.exists()) {
@@ -142,8 +151,8 @@ public class MulVALConnection {
                     "--vulnerability-scan", nessusReport,
                     "--routing-file", routing,
                     "--mulval-output-file", mulvalInputFile.getAbsolutePath(),
-                    "--attackerlocation" , attackerLocation ,
-                    "--to-fiware-xml-topology", topologyFile ,
+                    "--attackerlocation", attackerLocation,
+                    "--to-fiware-xml-topology", topologyFile,
                     "-vv"
             );
             processBuilder.directory(new File(mulvalInputScriptFolder));
@@ -168,5 +177,5 @@ public class MulVALConnection {
         }
         return false;
     }
-    
+
 }

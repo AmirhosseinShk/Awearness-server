@@ -25,9 +25,63 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import server.attackgraph.AttackPath;
 
-
 @Path("/json/")
 public class RestJsonAPI {
+
+    /**
+     * Generates the attack graph and initializes with testObject located in testInputs1 for other API
+     * calls (database, attack graph, attack paths,...)
+     *
+     * @param request the HTTP request
+     * @return the HTTP response
+     * @throws Exception
+     */
+    @GET
+    @Path("initializeTest")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response initialiseTest(@Context HttpServletRequest request) throws Exception {
+        String databasePath = ProjectProperties.getInstance().getProperty("vulnerability-database");
+
+        //Load the vulnerability and remediation database
+        Database database = new Database(databasePath);
+
+        String topologyFilePath = ProjectProperties.getInstance().getProperty("output-topology");
+
+        Logger.getLogger(RestJsonAPI.class.getName()).log(Level.INFO, "Generating topology and mulval inputs " + topologyFilePath);
+        MulVALConnection.prepareMulVALInputs(true);
+
+        Logger.getLogger(RestJsonAPI.class.getName()).log(Level.INFO, "Loading topology " + topologyFilePath);
+        InformationSystem informationSystem = MulVALConnection.loadTopologyXMLFile(topologyFilePath, database);
+
+        AttackGraph attackGraph = MulVALConnection.generateAttackGraphWithMulValUsingAlreadyGeneratedMulVALInputFile();
+        if (attackGraph == null) {
+            return RestApplication.returnErrorMessage(request, "the attack graph is empty");
+        }
+        Logger.getLogger(RestJsonAPI.class.getName()).log(Level.INFO, "Launch scoring function");
+        attackGraph.loadMetricsFromTopology(informationSystem);
+        List<AttackPath> attackPaths = AttackPathManagement.scoreAttackPaths(attackGraph, attackGraph.getNumberOfVertices());
+
+        //Delete attack paths that have less than 3 hosts (attacker that pown its own host).
+        List<AttackPath> attackPathToKeep = new ArrayList<AttackPath>();
+        for (AttackPath attackPath : attackPaths) {
+            if (attackPath.vertices.size() > 3) {
+                attackPathToKeep.add(attackPath);
+            }
+        }
+        attackPaths = attackPathToKeep;
+
+        Logger.getLogger(RestJsonAPI.class.getName()).log(Level.INFO, attackPaths.size() + " attack paths scored");
+
+        Monitoring monitoring = new Monitoring();
+        monitoring.setAttackPathList(attackPaths);
+        monitoring.setInformationSystem(informationSystem);
+        monitoring.setAttackGraph((MulvalAttackGraph) attackGraph);
+        request.getSession(true).setAttribute("database", database);
+        request.getSession(true).setAttribute("monitoring", monitoring);
+
+        return RestApplication.returnJsonObject(
+                request, new JSONObject().put("status", "AttackGraph/AttackPath Genereted Successfull"));
+    }
 
     /**
      * Generates the attack graph and initializes the main objects for other API
@@ -49,7 +103,7 @@ public class RestJsonAPI {
         String topologyFilePath = ProjectProperties.getInstance().getProperty("output-topology");
 
         Logger.getLogger(RestJsonAPI.class.getName()).log(Level.INFO, "Generating topology and mulval inputs " + topologyFilePath);
-        MulVALConnection.prepareMulVALInputs();
+        MulVALConnection.prepareMulVALInputs(false);
 
         Logger.getLogger(RestJsonAPI.class.getName()).log(Level.INFO, "Loading topology " + topologyFilePath);
         InformationSystem informationSystem = MulVALConnection.loadTopologyXMLFile(topologyFilePath, database);
@@ -105,10 +159,10 @@ public class RestJsonAPI {
      * @throws Exception
      */
     @POST
-    @Path("/initialize")
+    @Path("/initializeNessus")
     @Consumes({MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON, MediaType.TEXT_XML})
     @Produces(MediaType.APPLICATION_JSON)
-    public Response initializeFromXMLText(@Context HttpServletRequest request, String xmlString) throws Exception {
+    public Response initializeFromNessus(@Context HttpServletRequest request, String xmlString) throws Exception {
         String nussusScanFilePath = ProjectProperties.getInstance().getProperty("nessus-scan-path");
         Logger.getLogger(RestJsonAPI.class.getName()).log(Level.INFO, "Storing nessusFile in " + nussusScanFilePath);
         PrintWriter out = new PrintWriter(nussusScanFilePath);
@@ -116,8 +170,8 @@ public class RestJsonAPI {
         out.close();
         return RestApplication.returnJsonObject(request, new JSONObject().put("status", "Loaded"));
     }
-    
-        /**
+
+    /**
      * Generates the attack graph and initializes the main objects for other API
      * calls (database, attack graph, attack paths,...). Load the objects from
      * the POST XML file describing the whole network topology
@@ -131,13 +185,19 @@ public class RestJsonAPI {
     @Consumes({MediaType.TEXT_PLAIN, MediaType.APPLICATION_JSON, MediaType.TEXT_XML})
     @Produces(MediaType.APPLICATION_JSON)
     public Response initializeAllFromXMLText(@Context HttpServletRequest request, String Data) throws Exception {
-        String fileType = "nessus-scan-path"; // should get it from server side
+        String[] result = Data.split(System.lineSeparator(), 2);
+        String fileType = result[0]; // get first line
+        String fileData = result[1]; //other line
         String dataFilePath = ProjectProperties.getInstance().getProperty(fileType);
         Logger.getLogger(RestJsonAPI.class.getName()).log(Level.INFO, "Storing Data in " + dataFilePath);
-        PrintWriter out = new PrintWriter(dataFilePath);
-        out.print(Data);
-        out.close();
-        return RestApplication.returnJsonObject(request, new JSONObject().put("status", "Loaded"));
+        try {
+            PrintWriter out = new PrintWriter(dataFilePath);
+            out.print(fileData);
+            out.close();
+            return RestApplication.returnJsonObject(request, new JSONObject().put("status", "Loaded"));
+        } catch (Exception e) {
+            return RestApplication.returnJsonObject(request, new JSONObject().put("status", "failed"));
+        }
     }
 
     /**

@@ -8,9 +8,9 @@ import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.ApplicationPath;
 import javax.ws.rs.core.Response;
 
-
 @ApplicationPath("/rest")
 public class RestApplication extends ResourceConfig {
+
     /**
      * Register the package of the rest application
      */
@@ -21,7 +21,8 @@ public class RestApplication extends ResourceConfig {
     }
 
     /**
-     * Returns the {@link javax.ws.rs.core.Response} object from a {@link org.json.JSONObject}
+     * Returns the {@link javax.ws.rs.core.Response} object from a
+     * {@link org.json.JSONObject}
      *
      * @param jsonObject the jsonObject to return
      * @return the relative {@link javax.ws.rs.core.Response} object
@@ -29,7 +30,6 @@ public class RestApplication extends ResourceConfig {
     public static Response returnJsonObject(HttpServletRequest request, JSONObject jsonObject) {
         // client's origin
         String clientOrigin = request.getHeader("origin");
-
         return Response.ok(jsonObject.toString())
                 .header("Access-Control-Allow-Origin", clientOrigin)
                 .header("Access-Control-Allow-Headers", "origin, content-type, accept, authorization")
@@ -40,10 +40,12 @@ public class RestApplication extends ResourceConfig {
     }
 
     /**
-     * Returns an error message, in a {@link org.json.JSONObject} ({error:"the error message"}
+     * Returns an error message, in a
+     * {@link org.json.JSONObject} ({error:"the error message"}
      *
      * @param errorMessage the error message to return
-     * @return the {@link javax.ws.rs.core.Response} to this {@link org.json.JSONObject}
+     * @return the {@link javax.ws.rs.core.Response} to this
+     * {@link org.json.JSONObject}
      */
     public static Response returnErrorMessage(HttpServletRequest request, String errorMessage) {
 
@@ -54,10 +56,12 @@ public class RestApplication extends ResourceConfig {
     }
 
     /**
-     * Returns a success message, in a {@link org.json.JSONObject} ({success:"the success message"}
+     * Returns a success message, in a
+     * {@link org.json.JSONObject} ({success:"the success message"}
      *
      * @param successMessage the sucess message to return
-     * @return the {@link javax.ws.rs.core.Response} to this {@link org.json.JSONObject}
+     * @return the {@link javax.ws.rs.core.Response} to this
+     * {@link org.json.JSONObject}
      */
     public static Response returnSuccessMessage(HttpServletRequest request, String successMessage) {
 
